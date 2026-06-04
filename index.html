@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>딜러 시급 관리표</title>
+  <style>
+    :root {
+      --header-bg: #fff2cc;
+      --border: #b4b4b4;
+      --accent: #4472c4;
+      --bg: #f5f5f5;
+      --text: #222;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .toolbar input[type="date"],
+    .toolbar input[type="text"],
+    .toolbar select,
+    .toolbar button {
+      font: inherit;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .toolbar input#eventName {
+      min-width: 160px;
+    }
+
+    .toolbar button {
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .toolbar button.secondary {
+      background: #fff;
+      color: var(--text);
+    }
+
+    .toolbar button:hover {
+      opacity: 0.92;
+    }
+
+    .sheet-wrap {
+      overflow-x: auto;
+      padding: 0 0 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    thead th {
+      background: var(--header-bg);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #fafcff;
+    }
+
+    td input,
+    td select {
+      width: 100%;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font: inherit;
+      text-align: center;
+      padding: 4px;
+      outline: none;
+    }
+
+    td input:focus,
+    td select:focus {
+      background: #eef4ff;
+    }
+
+    td.name-cell input {
+      text-align: left;
+    }
+
+    td.account-cell input {
+      text-align: left;
+      min-width: 180px;
+    }
+
+    .time-cell {
+      padding: 4px;
+    }
+
+    .time-picker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .time-picker select {
+      flex: 1;
+      min-width: 54px;
+      padding: 4px 2px;
+    }
+
+    .time-sep {
+      flex: 0;
+      font-weight: 700;
+    }
+
+    td.readonly {
+      background: #f9f9f9;
+      font-weight: 600;
+    }
+
+    tfoot td {
+      background: var(--header-bg);
+      font-weight: 700;
+    }
+
+    tfoot .total-label {
+      text-align: right;
+      padding-right: 12px;
+    }
+
+    .sheet-tabs-bar {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 0 8px;
+      border-top: 1px solid var(--border);
+      background: #ececec;
+      overflow-x: auto;
+      min-height: 40px;
+    }
+
+    .sheet-tabs {
+      display: flex;
+      align-items: stretch;
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    .sheet-tab {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 160px;
+      max-width: 280px;
+      padding: 8px 12px 8px 16px;
+      border: none;
+      border-right: 1px solid var(--border);
+      background: #e0e0e0;
+      font: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    .sheet-tab > span:first-child {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+    }
+
+    .sheet-tab:hover {
+      background: #d8d8d8;
+    }
+
+    .sheet-tab.active {
+      background: #fff;
+      font-weight: 700;
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: -1px;
+    }
+
+    .sheet-tab-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-left: auto;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      font-size: 0.8rem;
+      line-height: 1;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .sheet-tab-close:hover {
+      background: rgba(0, 0, 0, 0.1);
+      color: #222;
+    }
+
+    .sheet-tab-add {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border: none;
+      border-left: 1px solid var(--border);
+      background: #e0e0e0;
+      font: inherit;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .sheet-tab-add:hover {
+      background: #d0d0d0;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <h1>딜러 시급 관리표</h1>
+      <label>
+        대회명
+        <input type="text" id="eventName" placeholder="대회명 입력">
+      </label>
+      <label>
+        날짜
+        <input type="date" id="workDate">
+      </label>
+      <button type="button" id="addRowBtn">행 추가</button>
+      <button type="button" id="exportBtn" class="secondary">보내기</button>
+      <button type="button" id="copyBtn" class="secondary">복사</button>
+      <button type="button" id="clearBtn" class="secondary">현재 시트 초기화</button>
+    </div>
+
+    <div class="sheet-wrap">
+      <table id="payrollTable">
+        <thead>
+          <tr>
+            <th style="width: 100px;">이름</th>
+            <th style="width: 110px;">출근</th>
+            <th style="width: 110px;">퇴근</th>
+            <th style="width: 90px;">근무 시간</th>
+            <th style="width: 90px;">시급</th>
+            <th style="width: 110px;">금액</th>
+            <th style="width: 100px;">은행</th>
+            <th style="width: 220px;">계좌번호</th>
+            <th style="width: 48px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="total-label">합계</td>
+            <td id="totalAmount" class="readonly">0</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="sheet-tabs-bar">
+      <div class="sheet-tabs" id="sheetTabs" role="tablist" aria-label="시트 목록"></div>
+      <button type="button" class="sheet-tab-add" id="addSheetBtn" title="새 시트 추가">+</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const DEFAULT_HOURLY = 20000;
+    const INITIAL_ROWS = 10;
+    const STORAGE_KEY = "dealer-payroll-v2";
+    const STORAGE_KEY_LEGACY = "dealer-payroll-v1";
+    const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+    const eventNameInput = document.getElementById("eventName");
+    const dateInput = document.getElementById("workDate");
+    const tableBody = document.getElementById("tableBody");
+    const totalAmountEl = document.getElementById("totalAmount");
+    const sheetTabsEl = document.getElementById("sheetTabs");
+
+    let workbook = { activeSheetId: null, sheets: [] };
+
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function todayDateString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function normalizeTime(timeValue) {
+      if (!timeValue) return { hour: "", minute: "" };
+      const [hourText, minuteText] = timeValue.split(":");
+      let hour = Number(hourText);
+      let minute = Math.round(Number(minuteText) / 5) * 5;
+      if (Number.isNaN(hour) || Number.isNaN(minute)) return { hour: "", minute: "" };
+      if (minute === 60) {
+        hour = (hour + 1) % 24;
+        minute = 0;
+      }
+      return { hour: pad2(hour), minute: pad2(minute) };
+    }
+
+    function createHourOptions(selected) {
+      let options = '<option value="">--</option>';
+      for (let hour = 0; hour < 24; hour += 1) {
+        const value = pad2(hour);
+        options += `<option value="${value}"${value === selected ? " selected" : ""}>${value}</option>`;
+      }
+      return options;
+    }
+
+    function createMinuteOptions(selected) {
+      let options = '<option value="">--</option>';
+      MINUTE_OPTIONS.forEach((minute) => {
+        const value = pad2(minute);
+        options += `<option value="${value}"${value === selected ? " selected" : ""}>${value}</option>`;
+      });
+      return options;
+    }
+
+    function createTimeCell(prefix, timeValue) {
+      const { hour, minute } = normalizeTime(timeValue);
+      return `
+        <td class="time-cell">
+          <div class="time-picker">
+            <select class="${prefix}-hour">${createHourOptions(hour)}</select>
+            <span class="time-sep">:</span>
+            <select class="${prefix}-min">${createMinuteOptions(minute)}</select>
+          </div>
+        </td>`;
+    }
+
+    function getTimeValue(row, prefix) {
+      const hour = row.querySelector(`.${prefix}-hour`).value;
+      const minute = row.querySelector(`.${prefix}-min`).value;
+      if (!hour || !minute) return "";
+      return `${hour}:${minute}`;
+    }
+
+    function formatMoney(value) {
+      return Math.round(value).toLocaleString("ko-KR");
+    }
+
+    function parseMoneyInput(value) {
+      const digits = String(value ?? "").replace(/[^\d]/g, "");
+      return digits === "" ? 0 : Number(digits);
+    }
+
+    function formatRateInput(value) {
+      const num = typeof value === "number" ? value : parseMoneyInput(value);
+      if (!num) return "";
+      return num.toLocaleString("ko-KR");
+    }
+
+    function parseTimeToHours(start, end) {
+      if (!start || !end) return 0;
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      if ([sh, sm, eh, em].some(Number.isNaN)) return 0;
+      let minutes = (eh * 60 + em) - (sh * 60 + sm);
+      if (minutes < 0) minutes += 24 * 60;
+      return minutes / 60;
+    }
+
+    function formatHours(hours) {
+      if (!hours) return "";
+      return (Math.round(hours * 100) / 100).toFixed(2);
+    }
+
+    function createRow(data = {}) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="name-cell"><input type="text" class="field-name" placeholder="이름" value="${data.name || ""}"></td>
+        ${createTimeCell("field-start", data.start)}
+        ${createTimeCell("field-end", data.end)}
+        <td class="readonly field-hours">${formatHours(data.hours || 0)}</td>
+        <td><input type="text" class="field-rate" inputmode="numeric" value="${formatRateInput(data.rate ?? DEFAULT_HOURLY)}"></td>
+        <td class="readonly field-amount">${data.amount ? formatMoney(data.amount) : ""}</td>
+        <td><input type="text" class="field-bank" placeholder="은행" value="${data.bank || ""}"></td>
+        <td class="account-cell"><input type="text" class="field-account" placeholder="계좌번호" value="${data.account || ""}"></td>
+        <td><button type="button" class="secondary delete-row" title="행 삭제">✕</button></td>
+      `;
+      return tr;
+    }
+
+    function recalcRow(tr) {
+      const start = getTimeValue(tr, "field-start");
+      const end = getTimeValue(tr, "field-end");
+      const rate = parseMoneyInput(tr.querySelector(".field-rate").value);
+      const hours = parseTimeToHours(start, end);
+      const amount = hours * rate;
+
+      tr.querySelector(".field-hours").textContent = formatHours(hours);
+      tr.querySelector(".field-amount").textContent = amount ? formatMoney(amount) : "";
+      return amount;
+    }
+
+    function recalcAll() {
+      let total = 0;
+      tableBody.querySelectorAll("tr").forEach((tr) => {
+        total += recalcRow(tr);
+      });
+      totalAmountEl.textContent = formatMoney(total);
+    }
+
+    function newSheetId() {
+      return `sheet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function formatSheetTabLabel(sheetOrDate) {
+      const sheet =
+        typeof sheetOrDate === "object" && sheetOrDate !== null
+          ? sheetOrDate
+          : { date: sheetOrDate, eventName: "" };
+      const dateStr = sheet.date;
+      const eventName = (sheet.eventName || "").trim();
+      let dateLabel = "날짜 없음";
+      if (dateStr) {
+        const [y, m, d] = dateStr.split("-");
+        dateLabel = y && m && d ? `${Number(m)}/${Number(d)}` : dateStr;
+      }
+      return eventName ? `${eventName} · ${dateLabel}` : dateLabel;
+    }
+
+    function collectRows() {
+      return [...tableBody.querySelectorAll("tr")].map((tr) => ({
+        name: tr.querySelector(".field-name").value,
+        start: getTimeValue(tr, "field-start"),
+        end: getTimeValue(tr, "field-end"),
+        rate: parseMoneyInput(tr.querySelector(".field-rate").value),
+        bank: tr.querySelector(".field-bank").value,
+        account: tr.querySelector(".field-account").value,
+      }));
+    }
+
+    function getActiveSheet() {
+      return workbook.sheets.find((s) => s.id === workbook.activeSheetId) ?? null;
+    }
+
+    function syncActiveSheetFromTable() {
+      const sheet = getActiveSheet();
+      if (!sheet) return;
+      sheet.eventName = eventNameInput.value;
+      sheet.date = dateInput.value;
+      sheet.rows = collectRows();
+    }
+
+    function applySheetToTable(sheet) {
+      eventNameInput.value = sheet.eventName || "";
+      dateInput.value = sheet.date || todayDateString();
+      renderRows(sheet.rows);
+    }
+
+    function getExportRows() {
+      return [...tableBody.querySelectorAll("tr")]
+        .map((tr) => {
+          const start = getTimeValue(tr, "field-start");
+          const end = getTimeValue(tr, "field-end");
+          const rate = parseMoneyInput(tr.querySelector(".field-rate").value);
+          const hours = parseTimeToHours(start, end);
+          const amount = hours * rate;
+          return {
+            name: tr.querySelector(".field-name").value.trim(),
+            start,
+            end,
+            hours: formatHours(hours) || "",
+            rate,
+            amount: amount ? Math.round(amount) : "",
+            bank: tr.querySelector(".field-bank").value.trim(),
+            account: tr.querySelector(".field-account").value.trim(),
+          };
+        })
+        .filter((row) => row.name || row.start || row.end || row.bank || row.account);
+    }
+
+    function getTotalAmountNumber() {
+      let total = 0;
+      tableBody.querySelectorAll("tr").forEach((tr) => {
+        const start = getTimeValue(tr, "field-start");
+        const end = getTimeValue(tr, "field-end");
+        const rate = parseMoneyInput(tr.querySelector(".field-rate").value);
+        total += parseTimeToHours(start, end) * rate;
+      });
+      return Math.round(total);
+    }
+
+    function getCopyRows() {
+      return getExportRows().filter(
+        (row) => row.name || row.amount !== "" || row.bank || row.account
+      );
+    }
+
+    const COPY_FIELD_SEP = "  ";
+
+    function buildCopyText() {
+      const headers = ["이름", "금액", "은행", "계좌번호"];
+      const lines = [headers.join(COPY_FIELD_SEP)];
+
+      getCopyRows().forEach((row) => {
+        lines.push(
+          [
+            row.name,
+            row.amount === "" ? "" : formatMoney(row.amount),
+            row.bank,
+            row.account,
+          ].join(COPY_FIELD_SEP)
+        );
+      });
+
+      return lines.join("\n");
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    function exportToExcel() {
+      const rows = getExportRows();
+      if (!rows.length) {
+        alert("보낼 데이터가 없습니다. 이름·출퇴근 시간 등을 입력해 주세요.");
+        return;
+      }
+
+      const sheetData = [
+        ["딜러 시급 관리표"],
+        ["대회명", eventNameInput.value.trim() || ""],
+        ["날짜", dateInput.value || ""],
+        [],
+        ["이름", "출근", "퇴근", "근무 시간", "시급", "금액", "은행", "계좌번호"],
+        ...rows.map((row) => [
+          row.name,
+          row.start,
+          row.end,
+          row.hours,
+          row.rate ? formatMoney(row.rate) : "",
+          row.amount !== "" ? formatMoney(row.amount) : "",
+          row.bank,
+          row.account,
+        ]),
+        [],
+        ["합계", "", "", "", "", formatMoney(getTotalAmountNumber()), "", ""],
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+      worksheet["!cols"] = [
+        { wch: 12 },
+        { wch: 8 },
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 22 },
+      ];
+      XLSX.utils.book_append_sheet(workbook, worksheet, "시급관리");
+
+      const eventPart = (eventNameInput.value.trim() || "대회미지정").replace(/[\\/:*?"<>|]/g, "_");
+      const datePart = (dateInput.value || "날짜미지정").replace(/-/g, "");
+      XLSX.writeFile(workbook, `딜러시급관리표_${eventPart}_${datePart}.xlsx`);
+    }
+
+    async function copyTableText() {
+      const rows = getCopyRows();
+      if (!rows.length) {
+        alert("복사할 데이터가 없습니다. 이름·금액·계좌 정보를 입력해 주세요.");
+        return;
+      }
+      const text = buildCopyText();
+      try {
+        await copyToClipboard(text);
+        alert("표 내용이 텍스트로 복사되었습니다.");
+      } catch {
+        alert("복사에 실패했습니다. 브라우저에서 클립보드 권한을 허용해 주세요.");
+      }
+    }
+
+    function saveWorkbook() {
+      syncActiveSheetFromTable();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workbook));
+    }
+
+    function loadLegacyData() {
+      const raw = localStorage.getItem(STORAGE_KEY_LEGACY);
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function createSheet(dateStr, rows) {
+      const id = newSheetId();
+      return {
+        id,
+        eventName: "",
+        date: dateStr || todayDateString(),
+        rows: rows ?? [],
+      };
+    }
+
+    function initWorkbook() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.sheets?.length) {
+            workbook = parsed;
+            if (!workbook.sheets.some((s) => s.id === workbook.activeSheetId)) {
+              workbook.activeSheetId = workbook.sheets[0].id;
+            }
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
+      }
+
+      const legacy = loadLegacyData();
+      const sheet = createSheet(legacy?.date || todayDateString(), legacy?.rows ?? []);
+      workbook = { activeSheetId: sheet.id, sheets: [sheet] };
+      saveWorkbook();
+      if (legacy) localStorage.removeItem(STORAGE_KEY_LEGACY);
+    }
+
+    function renderSheetTabs() {
+      sheetTabsEl.innerHTML = "";
+      workbook.sheets.forEach((sheet) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "sheet-tab" + (sheet.id === workbook.activeSheetId ? " active" : "");
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-selected", sheet.id === workbook.activeSheetId ? "true" : "false");
+        tab.dataset.sheetId = sheet.id;
+
+        const label = document.createElement("span");
+        label.textContent = formatSheetTabLabel(sheet);
+        tab.appendChild(label);
+
+        if (workbook.sheets.length > 1) {
+          const closeBtn = document.createElement("button");
+          closeBtn.type = "button";
+          closeBtn.className = "sheet-tab-close";
+          closeBtn.title = "시트 삭제";
+          closeBtn.setAttribute("aria-label", "시트 삭제");
+          closeBtn.textContent = "×";
+          closeBtn.dataset.sheetId = sheet.id;
+          tab.appendChild(closeBtn);
+        }
+
+        sheetTabsEl.appendChild(tab);
+      });
+    }
+
+    function switchSheet(sheetId) {
+      if (sheetId === workbook.activeSheetId) return;
+      syncActiveSheetFromTable();
+      workbook.activeSheetId = sheetId;
+      const sheet = getActiveSheet();
+      if (sheet) applySheetToTable(sheet);
+      renderSheetTabs();
+      saveWorkbook();
+    }
+
+    function addSheet() {
+      syncActiveSheetFromTable();
+      const sheet = createSheet(todayDateString(), []);
+      workbook.sheets.push(sheet);
+      workbook.activeSheetId = sheet.id;
+      applySheetToTable(sheet);
+      renderSheetTabs();
+      saveWorkbook();
+    }
+
+    function deleteSheet(sheetId) {
+      if (workbook.sheets.length <= 1) return;
+      const sheet = workbook.sheets.find((s) => s.id === sheetId);
+      const label = sheet ? formatSheetTabLabel(sheet) : "이 시트";
+      if (!confirm(`${label} 시트를 삭제할까요?`)) return;
+
+      const wasActive = workbook.activeSheetId === sheetId;
+      workbook.sheets = workbook.sheets.filter((s) => s.id !== sheetId);
+      if (wasActive) {
+        workbook.activeSheetId = workbook.sheets[0].id;
+        applySheetToTable(getActiveSheet());
+      }
+      renderSheetTabs();
+      saveWorkbook();
+    }
+
+    function saveData() {
+      saveWorkbook();
+      renderSheetTabs();
+    }
+
+    function renderRows(rows) {
+      tableBody.innerHTML = "";
+      const list = rows && rows.length ? rows : Array.from({ length: INITIAL_ROWS }, () => ({}));
+      list.forEach((row) => tableBody.appendChild(createRow(row)));
+      recalcAll();
+    }
+
+    function addRow() {
+      tableBody.appendChild(createRow());
+      saveWorkbook();
+    }
+
+    tableBody.addEventListener("input", (event) => {
+      if (event.target.classList.contains("field-rate")) {
+        const input = event.target;
+        const digits = input.value.replace(/[^\d]/g, "");
+        input.value = digits ? Number(digits).toLocaleString("ko-KR") : "";
+      }
+      recalcAll();
+      saveData();
+    });
+
+    tableBody.addEventListener("change", () => {
+      recalcAll();
+      saveData();
+    });
+
+    tableBody.addEventListener("click", (event) => {
+      if (event.target.classList.contains("delete-row")) {
+        const tr = event.target.closest("tr");
+        if (tableBody.children.length > 1) {
+          tr.remove();
+          recalcAll();
+          saveData();
+        }
+      }
+    });
+
+    document.getElementById("addRowBtn").addEventListener("click", addRow);
+    document.getElementById("exportBtn").addEventListener("click", exportToExcel);
+    document.getElementById("copyBtn").addEventListener("click", copyTableText);
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      const sheet = getActiveSheet();
+      const label = sheet ? formatSheetTabLabel(sheet) : "현재";
+      if (!confirm(`${label} 시트의 입력 내용을 초기화할까요?`)) return;
+      eventNameInput.value = "";
+      dateInput.value = todayDateString();
+      renderRows([]);
+      saveData();
+    });
+
+    eventNameInput.addEventListener("input", () => {
+      const sheet = getActiveSheet();
+      if (sheet) sheet.eventName = eventNameInput.value;
+      saveData();
+    });
+
+    dateInput.addEventListener("change", () => {
+      const sheet = getActiveSheet();
+      if (sheet) sheet.date = dateInput.value;
+      saveData();
+    });
+
+    sheetTabsEl.addEventListener("click", (event) => {
+      const closeBtn = event.target.closest(".sheet-tab-close");
+      if (closeBtn) {
+        event.stopPropagation();
+        deleteSheet(closeBtn.dataset.sheetId);
+        return;
+      }
+      const tab = event.target.closest(".sheet-tab");
+      if (tab?.dataset.sheetId) switchSheet(tab.dataset.sheetId);
+    });
+
+    document.getElementById("addSheetBtn").addEventListener("click", addSheet);
+
+    initWorkbook();
+    const active = getActiveSheet();
+    if (active) applySheetToTable(active);
+    renderSheetTabs();
+    saveWorkbook();
+  </script>
+</body>
+</html>
