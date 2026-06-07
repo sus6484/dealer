@@ -43,11 +43,38 @@
       background: #fafafa;
     }
 
+    .toolbar-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 220px;
+    }
+
     .toolbar h1 {
       margin: 0;
       font-size: 1.25rem;
       font-weight: 700;
-      flex: 1;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover {
+      background: #f0f4ff;
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .toolbar label {
@@ -158,6 +185,8 @@
       flex: 1;
       min-width: 54px;
       padding: 4px 2px;
+      text-align: center;
+      text-align-last: center;
     }
 
     .time-sep {
@@ -168,6 +197,11 @@
     td.readonly {
       background: #f9f9f9;
       font-weight: 600;
+    }
+
+    td.row-num {
+      width: 44px;
+      color: #666;
     }
 
     tfoot td {
@@ -274,12 +308,147 @@
       background: #d0d0d0;
     }
 
+    .dealer-picker-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .dealer-picker-backdrop[hidden] {
+      display: none;
+    }
+
+    .dealer-picker {
+      width: min(420px, 100%);
+      max-height: min(80vh, 520px);
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    .dealer-picker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .dealer-picker-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .dealer-picker-close {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--text);
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .dealer-picker-desc {
+      margin: 0;
+      padding: 14px 18px 0;
+      font-size: 0.875rem;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .dealer-picker-list {
+      padding: 12px 18px;
+      overflow-y: auto;
+    }
+
+    .dealer-picker-item {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .dealer-picker-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .dealer-picker-item:hover {
+      border-color: var(--accent);
+      background: #f0f4ff;
+    }
+
+    .dealer-picker-item-name {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .dealer-picker-item-meta {
+      display: block;
+      font-size: 0.8125rem;
+      color: #666;
+    }
+
+    .dealer-picker-empty {
+      padding: 20px 14px;
+      text-align: center;
+      color: #666;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .dealer-picker-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 18px 16px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .dealer-picker-footer button {
+      font: inherit;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
   <div class="app">
     <div class="toolbar">
-      <h1>딜러 시급 관리표</h1>
+      <div class="toolbar-head">
+        <h1>딜러 시급 관리표</h1>
+        <a href="dealers.html" class="nav-link">딜러 등록</a>
+      </div>
       <label>
         대회명
         <input type="text" id="eventName" placeholder="대회명 입력">
@@ -288,7 +457,7 @@
         날짜
         <input type="date" id="workDate">
       </label>
-      <button type="button" id="addRowBtn">행 추가</button>
+      <button type="button" id="addRowBtn" class="secondary">행 추가</button>
       <button type="button" id="exportBtn" class="secondary">보내기</button>
       <button type="button" id="copyBtn" class="secondary">복사</button>
       <button type="button" id="clearBtn" class="secondary">현재 시트 초기화</button>
@@ -298,6 +467,7 @@
       <table id="payrollTable">
         <thead>
           <tr>
+            <th style="width: 44px;">번호</th>
             <th style="width: 100px;">이름</th>
             <th style="width: 110px;">출근</th>
             <th style="width: 110px;">퇴근</th>
@@ -312,7 +482,7 @@
         <tbody id="tableBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="5" class="total-label">합계</td>
+            <td colspan="6" class="total-label">합계</td>
             <td id="totalAmount" class="readonly">0</td>
             <td colspan="3"></td>
           </tr>
@@ -326,12 +496,28 @@
     </div>
   </div>
 
+  <div class="dealer-picker-backdrop" id="dealerPickerBackdrop" hidden>
+    <div class="dealer-picker" role="dialog" aria-modal="true" aria-labelledby="dealerPickerTitle">
+      <div class="dealer-picker-header">
+        <h2 id="dealerPickerTitle">딜러 선택</h2>
+        <button type="button" class="dealer-picker-close" id="dealerPickerClose" aria-label="닫기">×</button>
+      </div>
+      <p class="dealer-picker-desc" id="dealerPickerDesc"></p>
+      <div class="dealer-picker-list" id="dealerPickerList"></div>
+      <div class="dealer-picker-footer">
+        <a href="dealers.html" class="nav-link">딜러 등록</a>
+        <button type="button" id="dealerPickerCancel">취소</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const DEFAULT_HOURLY = 20000;
     const INITIAL_ROWS = 10;
     const STORAGE_KEY = "dealer-payroll-v2";
     const STORAGE_KEY_LEGACY = "dealer-payroll-v1";
+    const DEALER_REGISTRY_KEY = "dealer-registry-v1";
     const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
     const eventNameInput = document.getElementById("eventName");
@@ -339,8 +525,92 @@
     const tableBody = document.getElementById("tableBody");
     const totalAmountEl = document.getElementById("totalAmount");
     const sheetTabsEl = document.getElementById("sheetTabs");
+    const dealerPickerBackdrop = document.getElementById("dealerPickerBackdrop");
+    const dealerPickerDesc = document.getElementById("dealerPickerDesc");
+    const dealerPickerList = document.getElementById("dealerPickerList");
+    const dealerPickerClose = document.getElementById("dealerPickerClose");
+    const dealerPickerCancel = document.getElementById("dealerPickerCancel");
 
     let workbook = { activeSheetId: null, sheets: [] };
+    let dealerPickerTargetRow = null;
+    let timeKeyBuffer = "";
+    let timeKeyTimer = null;
+    const TIME_KEY_BUFFER_MS = 700;
+
+    function normalizeName(value) {
+      return String(value ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function loadRegisteredDealers() {
+      const raw = localStorage.getItem(DEALER_REGISTRY_KEY);
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function searchDealersByName(name) {
+      const normalized = normalizeName(name);
+      if (!normalized) return [];
+      return loadRegisteredDealers().filter(
+        (dealer) => normalizeName(dealer.name) === normalized
+      );
+    }
+
+    function applyDealerToRow(tr, dealer) {
+      tr.querySelector(".field-bank").value = dealer.bank || "";
+      tr.querySelector(".field-account").value = dealer.account || "";
+      saveData();
+    }
+
+    function closeDealerPicker() {
+      dealerPickerBackdrop.hidden = true;
+      dealerPickerTargetRow = null;
+      dealerPickerList.innerHTML = "";
+    }
+
+    function openDealerPicker(tr, searchName) {
+      const matches = searchDealersByName(searchName);
+      dealerPickerTargetRow = tr;
+      dealerPickerDesc.textContent = `"${searchName}" 검색 결과입니다. 본인 계좌를 선택해 주세요.`;
+      dealerPickerList.innerHTML = "";
+
+      if (!matches.length) {
+        const empty = document.createElement("div");
+        empty.className = "dealer-picker-empty";
+        empty.innerHTML =
+          "등록된 딜러가 없습니다.<br>아래 <strong>딜러 등록</strong>에서 추가해 주세요.";
+        dealerPickerList.appendChild(empty);
+      } else {
+        matches.forEach((dealer) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "dealer-picker-item";
+          btn.innerHTML = `
+            <span class="dealer-picker-item-name">${escapeHtml(dealer.name)}</span>
+            <span class="dealer-picker-item-meta">${escapeHtml(dealer.bank)} · ${escapeHtml(dealer.account)}</span>
+          `;
+          btn.addEventListener("click", () => {
+            if (dealerPickerTargetRow) applyDealerToRow(dealerPickerTargetRow, dealer);
+            closeDealerPicker();
+          });
+          dealerPickerList.appendChild(btn);
+        });
+      }
+
+      dealerPickerBackdrop.hidden = false;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
 
     function pad2(value) {
       return String(value).padStart(2, "0");
@@ -362,6 +632,26 @@
         minute = 0;
       }
       return { hour: pad2(hour), minute: pad2(minute) };
+    }
+
+    function parseHourField(value) {
+      const digits = String(value ?? "").replace(/\D/g, "");
+      if (digits === "") return "";
+      let hour = Number(digits);
+      if (Number.isNaN(hour)) return "";
+      hour = Math.min(23, Math.max(0, hour));
+      return pad2(hour);
+    }
+
+    function parseMinuteField(value) {
+      const digits = String(value ?? "").replace(/\D/g, "");
+      if (digits === "") return "";
+      let minute = Number(digits);
+      if (Number.isNaN(minute)) return "";
+      minute = Math.round(minute / 5) * 5;
+      if (minute >= 60) minute = 55;
+      minute = Math.min(55, Math.max(0, minute));
+      return pad2(minute);
     }
 
     function createHourOptions(selected) {
@@ -431,9 +721,16 @@
       return (Math.round(hours * 100) / 100).toFixed(2);
     }
 
+    function updateRowNumbers() {
+      tableBody.querySelectorAll("tr").forEach((tr, index) => {
+        tr.querySelector(".row-num").textContent = index + 1;
+      });
+    }
+
     function createRow(data = {}) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
+        <td class="readonly row-num"></td>
         <td class="name-cell"><input type="text" class="field-name" placeholder="이름" value="${data.name || ""}"></td>
         ${createTimeCell("field-start", data.start)}
         ${createTimeCell("field-end", data.end)}
@@ -517,13 +814,14 @@
 
     function getExportRows() {
       return [...tableBody.querySelectorAll("tr")]
-        .map((tr) => {
+        .map((tr, index) => {
           const start = getTimeValue(tr, "field-start");
           const end = getTimeValue(tr, "field-end");
           const rate = parseMoneyInput(tr.querySelector(".field-rate").value);
           const hours = parseTimeToHours(start, end);
           const amount = hours * rate;
           return {
+            num: index + 1,
             name: tr.querySelector(".field-name").value.trim(),
             start,
             end,
@@ -557,12 +855,13 @@
     const COPY_FIELD_SEP = "  ";
 
     function buildCopyText() {
-      const headers = ["이름", "금액", "은행", "계좌번호"];
+      const headers = ["번호", "이름", "금액", "은행", "계좌번호"];
       const lines = [headers.join(COPY_FIELD_SEP)];
 
       getCopyRows().forEach((row) => {
         lines.push(
           [
+            row.num,
             row.name,
             row.amount === "" ? "" : formatMoney(row.amount),
             row.bank,
@@ -602,8 +901,9 @@
         ["대회명", eventNameInput.value.trim() || ""],
         ["날짜", dateInput.value || ""],
         [],
-        ["이름", "출근", "퇴근", "근무 시간", "시급", "금액", "은행", "계좌번호"],
+        ["번호", "이름", "출근", "퇴근", "근무 시간", "시급", "금액", "은행", "계좌번호"],
         ...rows.map((row) => [
+          row.num,
           row.name,
           row.start,
           row.end,
@@ -614,12 +914,13 @@
           row.account,
         ]),
         [],
-        ["합계", "", "", "", "", formatMoney(getTotalAmountNumber()), "", ""],
+        ["합계", "", "", "", "", "", formatMoney(getTotalAmountNumber()), "", ""],
       ];
 
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
       worksheet["!cols"] = [
+        { wch: 6 },
         { wch: 12 },
         { wch: 8 },
         { wch: 8 },
@@ -774,13 +1075,76 @@
       tableBody.innerHTML = "";
       const list = rows && rows.length ? rows : Array.from({ length: INITIAL_ROWS }, () => ({}));
       list.forEach((row) => tableBody.appendChild(createRow(row)));
+      updateRowNumbers();
       recalcAll();
+    }
+
+    function isTimeSelect(el) {
+      return (
+        el?.classList.contains("field-start-hour") ||
+        el?.classList.contains("field-end-hour") ||
+        el?.classList.contains("field-start-min") ||
+        el?.classList.contains("field-end-min")
+      );
+    }
+
+    function resetTimeKeyBuffer() {
+      timeKeyBuffer = "";
+      clearTimeout(timeKeyTimer);
+      timeKeyTimer = null;
+    }
+
+    function handleTimeSelectKeydown(event) {
+      if (!isTimeSelect(event.target) || !/^\d$/.test(event.key)) return;
+
+      event.preventDefault();
+      clearTimeout(timeKeyTimer);
+      timeKeyBuffer += event.key;
+
+      const isHour =
+        event.target.classList.contains("field-start-hour") ||
+        event.target.classList.contains("field-end-hour");
+      const parsed = isHour ? parseHourField(timeKeyBuffer) : parseMinuteField(timeKeyBuffer);
+      if (parsed) {
+        event.target.value = parsed;
+        recalcAll();
+        saveData();
+      }
+
+      timeKeyTimer = setTimeout(resetTimeKeyBuffer, TIME_KEY_BUFFER_MS);
     }
 
     function addRow() {
       tableBody.appendChild(createRow());
+      updateRowNumbers();
       saveWorkbook();
     }
+
+    tableBody.addEventListener("keydown", (event) => {
+      if (isTimeSelect(event.target) && /^\d$/.test(event.key)) {
+        handleTimeSelectKeydown(event);
+        return;
+      }
+      if (event.key !== "Enter" || !event.target.classList.contains("field-name")) return;
+      event.preventDefault();
+      const tr = event.target.closest("tr");
+      const name = normalizeName(event.target.value);
+      if (!name) return;
+      openDealerPicker(tr, name);
+    });
+
+    tableBody.addEventListener("focusin", (event) => {
+      if (isTimeSelect(event.target)) resetTimeKeyBuffer();
+    });
+
+    dealerPickerClose.addEventListener("click", closeDealerPicker);
+    dealerPickerCancel.addEventListener("click", closeDealerPicker);
+    dealerPickerBackdrop.addEventListener("click", (event) => {
+      if (event.target === dealerPickerBackdrop) closeDealerPicker();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !dealerPickerBackdrop.hidden) closeDealerPicker();
+    });
 
     tableBody.addEventListener("input", (event) => {
       if (event.target.classList.contains("field-rate")) {
@@ -802,6 +1166,7 @@
         const tr = event.target.closest("tr");
         if (tableBody.children.length > 1) {
           tr.remove();
+          updateRowNumbers();
           recalcAll();
           saveData();
         }
