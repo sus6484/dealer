@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>딜러 등록</title>
   <style>
     :root {
@@ -317,11 +320,8 @@
     </div>
   </div>
 
+  <script src="api-config.js?v=2"></script>
   <script>
-    const SHEETS_API_URL =
-      "https://script.google.com/macros/s/AKfycbxwMjrqA50JDEuxcCgh_DslyIrXeFAaLI64dkL7SWjeR4a7Kwgkgg51t1FExELqWFXu/exec";
-    const SHEETS_TOKEN = "0000";
-
     const form = document.getElementById("dealerForm");
     const dealerNameInput = document.getElementById("dealerName");
     const dealerBankInput = document.getElementById("dealerBank");

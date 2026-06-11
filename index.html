@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>딜러 시급 관리표</title>
   <style>
     :root {
@@ -512,14 +515,13 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="api-config.js?v=2"></script>
   <script>
+
     const DEFAULT_HOURLY = 20000;
     const INITIAL_ROWS = 10;
     const STORAGE_KEY = "dealer-payroll-v2";
     const STORAGE_KEY_LEGACY = "dealer-payroll-v1";
-    const SHEETS_API_URL =
-      "https://script.google.com/macros/s/AKfycbxwMjrqA50JDEuxcCgh_DslyIrXeFAaLI64dkL7SWjeR4a7Kwgkgg51t1FExELqWFXu/exec";
-    const SHEETS_TOKEN = "0000";
     const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
     const eventNameInput = document.getElementById("eventName");
