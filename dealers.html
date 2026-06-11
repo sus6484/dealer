@@ -338,12 +338,39 @@
     let dealers = [];
     let editingId = null;
 
+    const koreanCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+
+    function compareDealersByName(a, b) {
+      const nameCompare = koreanCollator.compare(
+        normalizeName(a.name),
+        normalizeName(b.name)
+      );
+      if (nameCompare !== 0) return nameCompare;
+      return koreanCollator.compare(a.bank || "", b.bank || "");
+    }
+
     function newDealerId() {
       return `dealer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     }
 
     function normalizeName(value) {
       return String(value ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizeAccount(value) {
+      return String(value ?? "").trim().replace(/[\s-]/g, "");
+    }
+
+    function findDuplicateByNameAndAccount(name, account, excludeId = null) {
+      const normalizedName = normalizeName(name);
+      const normalizedAccount = normalizeAccount(account);
+      return dealers.find((dealer) => {
+        if (excludeId && dealer.id === excludeId) return false;
+        return (
+          normalizeName(dealer.name) === normalizedName &&
+          normalizeAccount(dealer.account) === normalizedAccount
+        );
+      });
     }
 
     function formatDealerLabel(dealer) {
@@ -376,11 +403,7 @@
       dealerCountEl.textContent = String(dealers.length);
       emptyStateEl.hidden = dealers.length > 0;
 
-      const sorted = [...dealers].sort((a, b) => {
-        const nameCompare = a.name.localeCompare(b.name, "ko");
-        if (nameCompare !== 0) return nameCompare;
-        return (a.bank || "").localeCompare(b.bank || "", "ko");
-      });
+      const sorted = [...dealers].sort(compareDealersByName);
 
       sorted.forEach((dealer) => {
         const tr = document.createElement("tr");
@@ -421,6 +444,16 @@
     }
 
     function upsertDealer(data) {
+      const duplicate = findDuplicateByNameAndAccount(
+        data.name,
+        data.account,
+        editingId
+      );
+      if (duplicate) {
+        alert("등록할 수 없습니다. 같은 이름과 계좌번호로 이미 등록된 딜러가 있습니다.");
+        return;
+      }
+
       if (editingId) {
         const target = dealers.find((dealer) => dealer.id === editingId);
         if (!target) {

@@ -541,6 +541,17 @@
       return String(value ?? "").trim().replace(/\s+/g, " ");
     }
 
+    const koreanCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+
+    function compareDealersByName(a, b) {
+      const nameCompare = koreanCollator.compare(
+        normalizeName(a.name),
+        normalizeName(b.name)
+      );
+      if (nameCompare !== 0) return nameCompare;
+      return koreanCollator.compare(a.bank || "", b.bank || "");
+    }
+
     function loadRegisteredDealers() {
       const raw = localStorage.getItem(DEALER_REGISTRY_KEY);
       if (!raw) return [];
@@ -555,9 +566,9 @@
     function searchDealersByName(name) {
       const normalized = normalizeName(name);
       if (!normalized) return [];
-      return loadRegisteredDealers().filter(
-        (dealer) => normalizeName(dealer.name) === normalized
-      );
+      return loadRegisteredDealers()
+        .filter((dealer) => normalizeName(dealer.name) === normalized)
+        .sort(compareDealersByName);
     }
 
     function applyDealerToRow(tr, dealer) {
