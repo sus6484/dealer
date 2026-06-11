@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>딜러 등록</title>
+  <style>
+    :root {
+      --header-bg: #fff2cc;
+      --border: #b4b4b4;
+      --accent: #4472c4;
+      --bg: #f5f5f5;
+      --text: #222;
+      --danger: #c0392b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .toolbar-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover {
+      background: #f0f4ff;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .form-panel {
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fafcff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field label {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .form-field input,
+    .form-field select {
+      font: inherit;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(68, 114, 196, 0.15);
+    }
+
+    .form-hint {
+      margin: 0 0 16px;
+      font-size: 0.8125rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      font: inherit;
+      padding: 8px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      opacity: 0.92;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    button.danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .list-panel {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .list-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    .list-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 480px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    thead th {
+      background: var(--header-bg);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #fafcff;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: #666;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .row-actions button {
+      padding: 4px 10px;
+      font-size: 0.8125rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <div class="toolbar-head">
+        <h1>딜러 등록</h1>
+        <a href="index.html" class="nav-link">시급 관리표</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <section class="form-panel">
+        <h2 class="section-title">새 딜러 등록</h2>
+        <p class="form-hint">
+          이름·은행·계좌번호를 등록해 두면, 시급 관리표에서 이름 검색 시 자동으로 불러올 수 있습니다.
+        </p>
+        <form id="dealerForm">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="dealerName">이름 *</label>
+              <input type="text" id="dealerName" placeholder="홍길동" required autocomplete="name">
+            </div>
+            <div class="form-field">
+              <label for="dealerBank">은행 *</label>
+              <input type="text" id="dealerBank" placeholder="국민은행" required list="bankList">
+            </div>
+            <div class="form-field">
+              <label for="dealerAccount">계좌번호 *</label>
+              <input type="text" id="dealerAccount" placeholder="123456-01-123456" required inputmode="numeric">
+            </div>
+          </div>
+          <datalist id="bankList">
+            <option value="국민은행"></option>
+            <option value="신한은행"></option>
+            <option value="우리은행"></option>
+            <option value="하나은행"></option>
+            <option value="NH농협은행"></option>
+            <option value="IBK기업은행"></option>
+            <option value="카카오뱅크"></option>
+            <option value="토스뱅크"></option>
+            <option value="케이뱅크"></option>
+            <option value="SC제일은행"></option>
+            <option value="씨티은행"></option>
+            <option value="새마을금고"></option>
+            <option value="신협"></option>
+            <option value="우체국"></option>
+          </datalist>
+          <div class="form-actions">
+            <button type="submit" id="submitBtn">등록</button>
+            <button type="button" class="secondary" id="resetBtn">입력 초기화</button>
+          </div>
+        </form>
+      </section>
+
+      <section>
+        <h2 class="section-title">등록된 딜러</h2>
+        <div class="list-panel">
+          <div class="list-meta">
+            <span>총 <strong id="dealerCount">0</strong>명</span>
+          </div>
+          <div class="list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>은행</th>
+                  <th>계좌번호</th>
+                  <th style="width: 120px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="dealerListBody"></tbody>
+            </table>
+            <div class="empty-state" id="emptyState" hidden>등록된 딜러가 없습니다.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="api-config.js"></script>
+  <script>
+    const form = document.getElementById("dealerForm");
+    const dealerNameInput = document.getElementById("dealerName");
+    const dealerBankInput = document.getElementById("dealerBank");
+    const dealerAccountInput = document.getElementById("dealerAccount");
+    const dealerListBody = document.getElementById("dealerListBody");
+    const dealerCountEl = document.getElementById("dealerCount");
+    const emptyStateEl = document.getElementById("emptyState");
+    const resetBtn = document.getElementById("resetBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    let dealers = [];
+    let editingId = null;
+    let isSaving = false;
+
+    const koreanCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
+
+    function compareDealersByName(a, b) {
+      const nameCompare = koreanCollator.compare(
+        normalizeName(a.name),
+        normalizeName(b.name)
+      );
+      if (nameCompare !== 0) return nameCompare;
+      return koreanCollator.compare(a.bank || "", b.bank || "");
+    }
+
+    function newDealerId() {
+      return `dealer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function normalizeName(value) {
+      return String(value ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizeAccount(value) {
+      return String(value ?? "").trim().replace(/[\s-]/g, "");
+    }
+
+    function findDuplicateByNameAndAccount(name, account, excludeId = null) {
+      const normalizedName = normalizeName(name);
+      const normalizedAccount = normalizeAccount(account);
+      return dealers.find((dealer) => {
+        if (excludeId && dealer.id === excludeId) return false;
+        return (
+          normalizeName(dealer.name) === normalizedName &&
+          normalizeAccount(dealer.account) === normalizedAccount
+        );
+      });
+    }
+
+    function formatDealerLabel(dealer) {
+      return `${dealer.name} (${dealer.bank})`;
+    }
+
+    async function postToSheet(payload) {
+      const res = await fetch(SHEETS_API_URL, {
+        method: "POST",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ token: SHEETS_TOKEN, ...payload }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "요청에 실패했습니다.");
+      return json;
+    }
+
+    async function fetchDealersFromSheet() {
+      const url = `${SHEETS_API_URL}?token=${encodeURIComponent(SHEETS_TOKEN)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "딜러 목록을 불러오지 못했습니다.");
+      return Array.isArray(json.dealers) ? json.dealers : [];
+    }
+
+    function getSubmitLabel() {
+      return editingId ? "수정 저장" : "등록";
+    }
+
+    function setSavingState(saving) {
+      isSaving = saving;
+      submitBtn.disabled = saving;
+      resetBtn.disabled = saving;
+      submitBtn.textContent = saving ? "저장 중..." : getSubmitLabel();
+    }
+
+    function resetForm() {
+      editingId = null;
+      form.reset();
+      if (!isSaving) submitBtn.textContent = "등록";
+    }
+
+    function renderDealerList() {
+      dealerListBody.innerHTML = "";
+      dealerCountEl.textContent = String(dealers.length);
+      emptyStateEl.hidden = dealers.length > 0;
+
+      const sorted = [...dealers].sort(compareDealersByName);
+
+      sorted.forEach((dealer) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(dealer.name)}</td>
+          <td>${escapeHtml(dealer.bank)}</td>
+          <td>${escapeHtml(dealer.account)}</td>
+          <td>
+            <div class="row-actions">
+              <button type="button" class="secondary edit-btn" data-id="${dealer.id}">수정</button>
+              <button type="button" class="danger delete-btn" data-id="${dealer.id}">삭제</button>
+            </div>
+          </td>
+        `;
+        dealerListBody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function getFormData() {
+      const name = normalizeName(dealerNameInput.value);
+      const bank = dealerBankInput.value.trim();
+      const account = dealerAccountInput.value.trim();
+
+      if (!name || !bank || !account) {
+        alert("이름, 은행, 계좌번호는 필수입니다.");
+        return null;
+      }
+
+      return { name, bank, account };
+    }
+
+    async function upsertDealer(data) {
+      const duplicate = findDuplicateByNameAndAccount(
+        data.name,
+        data.account,
+        editingId
+      );
+      if (duplicate) {
+        alert("등록할 수 없습니다. 같은 이름과 계좌번호로 이미 등록된 딜러가 있습니다.");
+        return;
+      }
+
+      setSavingState(true);
+      try {
+        if (editingId) {
+          const target = dealers.find((dealer) => dealer.id === editingId);
+          if (!target) {
+            alert("수정할 딜러를 찾을 수 없습니다.");
+            resetForm();
+            return;
+          }
+          const updatedDealer = {
+            ...target,
+            ...data,
+            updatedAt: new Date().toISOString(),
+          };
+          await postToSheet({ action: "update", dealer: updatedDealer });
+          Object.assign(target, updatedDealer);
+        } else {
+          const newDealer = {
+            id: newDealerId(),
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await postToSheet({ action: "create", dealer: newDealer });
+          dealers.push(newDealer);
+        }
+
+        renderDealerList();
+        resetForm();
+        dealerNameInput.focus();
+      } catch (err) {
+        alert(`저장에 실패했습니다.\n${err.message}`);
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    async function deleteDealer(dealer) {
+      if (!confirm(`${formatDealerLabel(dealer)} 딜러를 삭제할까요?`)) return;
+
+      setSavingState(true);
+      try {
+        await postToSheet({ action: "delete", id: dealer.id });
+        dealers = dealers.filter((item) => item.id !== dealer.id);
+        if (editingId === dealer.id) resetForm();
+        renderDealerList();
+      } catch (err) {
+        alert(`삭제에 실패했습니다.\n${err.message}`);
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (isSaving) return;
+      const data = getFormData();
+      if (!data) return;
+      void upsertDealer(data);
+    });
+
+    resetBtn.addEventListener("click", resetForm);
+
+    dealerListBody.addEventListener("click", (event) => {
+      if (isSaving) return;
+
+      const editBtn = event.target.closest(".edit-btn");
+      if (editBtn) {
+        const dealer = dealers.find((item) => item.id === editBtn.dataset.id);
+        if (!dealer) return;
+        editingId = dealer.id;
+        dealerNameInput.value = dealer.name;
+        dealerBankInput.value = dealer.bank;
+        dealerAccountInput.value = dealer.account;
+        submitBtn.textContent = "수정 저장";
+        dealerNameInput.focus();
+        return;
+      }
+
+      const deleteBtn = event.target.closest(".delete-btn");
+      if (deleteBtn) {
+        const dealer = dealers.find((item) => item.id === deleteBtn.dataset.id);
+        if (!dealer) return;
+        void deleteDealer(dealer);
+      }
+    });
+
+    async function initDealers() {
+      dealerCountEl.textContent = "…";
+      try {
+        dealers = await fetchDealersFromSheet();
+      } catch (err) {
+        alert(`딜러 목록을 불러오지 못했습니다.\n${err.message}`);
+        dealers = [];
+      }
+      renderDealerList();
+    }
+
+    void initDealers();
+  </script>
+</body>
+</html>

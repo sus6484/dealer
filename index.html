@@ -1,16 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <script>
-    (function () {
-      var APP_VERSION = "3";
-      if (new URLSearchParams(location.search).get("v") !== APP_VERSION) {
-        var url = new URL(location.href);
-        url.searchParams.set("v", APP_VERSION);
-        location.replace(url.toString());
-      }
-    })();
-  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -460,7 +450,7 @@
     <div class="toolbar">
       <div class="toolbar-head">
         <h1>딜러 시급 관리표</h1>
-        <a href="dealers.html?v=3" class="nav-link">딜러 등록</a>
+        <a href="register.html" class="nav-link">딜러 등록</a>
       </div>
       <label>
         대회명
@@ -518,14 +508,14 @@
       <p class="dealer-picker-desc" id="dealerPickerDesc"></p>
       <div class="dealer-picker-list" id="dealerPickerList"></div>
       <div class="dealer-picker-footer">
-        <a href="dealers.html?v=3" class="nav-link">딜러 등록</a>
+        <a href="register.html" class="nav-link">딜러 등록</a>
         <button type="button" id="dealerPickerCancel">취소</button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="api-config.js?v=3"></script>
+  <script src="api-config.js"></script>
   <script>
 
     const DEFAULT_HOURLY = 20000;
