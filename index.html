@@ -517,7 +517,9 @@
     const INITIAL_ROWS = 10;
     const STORAGE_KEY = "dealer-payroll-v2";
     const STORAGE_KEY_LEGACY = "dealer-payroll-v1";
-    const DEALER_REGISTRY_KEY = "dealer-registry-v1";
+    const SHEETS_API_URL =
+      "https://script.google.com/macros/s/AKfycby0I5PZylZT52CNndjGIEJMqCNB2ik4HkVSDtlRrOR-H1fyVK_IsfPdUHZc05cH4AMv/exec";
+    const SHEETS_TOKEN = "0000";
     const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
     const eventNameInput = document.getElementById("eventName");
@@ -552,21 +554,21 @@
       return koreanCollator.compare(a.bank || "", b.bank || "");
     }
 
-    function loadRegisteredDealers() {
-      const raw = localStorage.getItem(DEALER_REGISTRY_KEY);
-      if (!raw) return [];
-      try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
+    let registeredDealersCache = [];
+
+    async function loadRegisteredDealers() {
+      const url = `${SHEETS_API_URL}?token=${encodeURIComponent(SHEETS_TOKEN)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "딜러 목록을 불러오지 못했습니다.");
+      registeredDealersCache = Array.isArray(json.dealers) ? json.dealers : [];
+      return registeredDealersCache;
     }
 
     function searchDealersByName(name) {
       const normalized = normalizeName(name);
       if (!normalized) return [];
-      return loadRegisteredDealers()
+      return registeredDealersCache
         .filter((dealer) => normalizeName(dealer.name) === normalized)
         .sort(compareDealersByName);
     }
@@ -583,9 +585,24 @@
       dealerPickerList.innerHTML = "";
     }
 
-    function openDealerPicker(tr, searchName) {
-      const matches = searchDealersByName(searchName);
+    async function openDealerPicker(tr, searchName) {
       dealerPickerTargetRow = tr;
+      dealerPickerDesc.textContent = "딜러 목록을 불러오는 중…";
+      dealerPickerList.innerHTML = "";
+      dealerPickerBackdrop.hidden = false;
+
+      try {
+        await loadRegisteredDealers();
+      } catch (err) {
+        dealerPickerDesc.textContent = "딜러 목록을 불러오지 못했습니다.";
+        const empty = document.createElement("div");
+        empty.className = "dealer-picker-empty";
+        empty.textContent = err.message;
+        dealerPickerList.appendChild(empty);
+        return;
+      }
+
+      const matches = searchDealersByName(searchName);
       dealerPickerDesc.textContent = `"${searchName}" 검색 결과입니다. 본인 계좌를 선택해 주세요.`;
       dealerPickerList.innerHTML = "";
 
@@ -611,8 +628,6 @@
           dealerPickerList.appendChild(btn);
         });
       }
-
-      dealerPickerBackdrop.hidden = false;
     }
 
     function escapeHtml(value) {
@@ -1141,7 +1156,7 @@
       const tr = event.target.closest("tr");
       const name = normalizeName(event.target.value);
       if (!name) return;
-      openDealerPicker(tr, name);
+      void openDealerPicker(tr, name);
     });
 
     tableBody.addEventListener("focusin", (event) => {
@@ -1227,6 +1242,7 @@
     const active = getActiveSheet();
     if (active) applySheetToTable(active);
     renderSheetTabs();
+    void loadRegisteredDealers().catch(() => {});
     saveWorkbook();
   </script>
 </body>

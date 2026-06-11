@@ -152,8 +152,13 @@
       cursor: pointer;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       opacity: 0.92;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     button.secondary {
@@ -302,7 +307,7 @@
         <div class="list-panel">
           <div class="list-meta">
             <span>총 <strong id="dealerCount">0</strong>명</span>
-            <span class="badge">로컬 저장 · 구글 시트 연동 예정</span>
+            <span class="badge">구글 시트 연동</span>
           </div>
           <div class="list-wrap">
             <table>
@@ -324,7 +329,9 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "dealer-registry-v1";
+    const SHEETS_API_URL =
+      "https://script.google.com/macros/s/AKfycby0I5PZylZT52CNndjGIEJMqCNB2ik4HkVSDtlRrOR-H1fyVK_IsfPdUHZc05cH4AMv/exec";
+    const SHEETS_TOKEN = "0000";
 
     const form = document.getElementById("dealerForm");
     const dealerNameInput = document.getElementById("dealerName");
@@ -334,9 +341,11 @@
     const dealerCountEl = document.getElementById("dealerCount");
     const emptyStateEl = document.getElementById("emptyState");
     const resetBtn = document.getElementById("resetBtn");
+    const submitBtn = document.getElementById("submitBtn");
 
     let dealers = [];
     let editingId = null;
+    let isSaving = false;
 
     const koreanCollator = new Intl.Collator("ko-KR", { sensitivity: "base" });
 
@@ -377,25 +386,41 @@
       return `${dealer.name} (${dealer.bank})`;
     }
 
-    function loadDealers() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
+    async function postToSheet(payload) {
+      const res = await fetch(SHEETS_API_URL, {
+        method: "POST",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ token: SHEETS_TOKEN, ...payload }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "요청에 실패했습니다.");
+      return json;
     }
 
-    function saveDealers() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dealers));
+    async function fetchDealersFromSheet() {
+      const url = `${SHEETS_API_URL}?token=${encodeURIComponent(SHEETS_TOKEN)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "딜러 목록을 불러오지 못했습니다.");
+      return Array.isArray(json.dealers) ? json.dealers : [];
+    }
+
+    function getSubmitLabel() {
+      return editingId ? "수정 저장" : "등록";
+    }
+
+    function setSavingState(saving) {
+      isSaving = saving;
+      submitBtn.disabled = saving;
+      resetBtn.disabled = saving;
+      submitBtn.textContent = saving ? "저장 중..." : getSubmitLabel();
     }
 
     function resetForm() {
       editingId = null;
       form.reset();
-      document.getElementById("submitBtn").textContent = "등록";
+      if (!isSaving) submitBtn.textContent = "등록";
     }
 
     function renderDealerList() {
@@ -443,7 +468,7 @@
       return { name, bank, account };
     }
 
-    function upsertDealer(data) {
+    async function upsertDealer(data) {
       const duplicate = findDuplicateByNameAndAccount(
         data.name,
         data.account,
@@ -454,39 +479,72 @@
         return;
       }
 
-      if (editingId) {
-        const target = dealers.find((dealer) => dealer.id === editingId);
-        if (!target) {
-          alert("수정할 딜러를 찾을 수 없습니다.");
-          resetForm();
-          return;
+      setSavingState(true);
+      try {
+        if (editingId) {
+          const target = dealers.find((dealer) => dealer.id === editingId);
+          if (!target) {
+            alert("수정할 딜러를 찾을 수 없습니다.");
+            resetForm();
+            return;
+          }
+          const updatedDealer = {
+            ...target,
+            ...data,
+            updatedAt: new Date().toISOString(),
+          };
+          await postToSheet({ action: "update", dealer: updatedDealer });
+          Object.assign(target, updatedDealer);
+        } else {
+          const newDealer = {
+            id: newDealerId(),
+            ...data,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await postToSheet({ action: "create", dealer: newDealer });
+          dealers.push(newDealer);
         }
-        Object.assign(target, data, { updatedAt: new Date().toISOString() });
-      } else {
-        dealers.push({
-          id: newDealerId(),
-          ...data,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
 
-      saveDealers();
-      renderDealerList();
-      resetForm();
-      dealerNameInput.focus();
+        renderDealerList();
+        resetForm();
+        dealerNameInput.focus();
+      } catch (err) {
+        alert(`저장에 실패했습니다.\n${err.message}`);
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    async function deleteDealer(dealer) {
+      if (!confirm(`${formatDealerLabel(dealer)} 딜러를 삭제할까요?`)) return;
+
+      setSavingState(true);
+      try {
+        await postToSheet({ action: "delete", id: dealer.id });
+        dealers = dealers.filter((item) => item.id !== dealer.id);
+        if (editingId === dealer.id) resetForm();
+        renderDealerList();
+      } catch (err) {
+        alert(`삭제에 실패했습니다.\n${err.message}`);
+      } finally {
+        setSavingState(false);
+      }
     }
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (isSaving) return;
       const data = getFormData();
       if (!data) return;
-      upsertDealer(data);
+      void upsertDealer(data);
     });
 
     resetBtn.addEventListener("click", resetForm);
 
     dealerListBody.addEventListener("click", (event) => {
+      if (isSaving) return;
+
       const editBtn = event.target.closest(".edit-btn");
       if (editBtn) {
         const dealer = dealers.find((item) => item.id === editBtn.dataset.id);
@@ -495,7 +553,7 @@
         dealerNameInput.value = dealer.name;
         dealerBankInput.value = dealer.bank;
         dealerAccountInput.value = dealer.account;
-        document.getElementById("submitBtn").textContent = "수정 저장";
+        submitBtn.textContent = "수정 저장";
         dealerNameInput.focus();
         return;
       }
@@ -504,16 +562,22 @@
       if (deleteBtn) {
         const dealer = dealers.find((item) => item.id === deleteBtn.dataset.id);
         if (!dealer) return;
-        if (!confirm(`${formatDealerLabel(dealer)} 딜러를 삭제할까요?`)) return;
-        dealers = dealers.filter((item) => item.id !== dealer.id);
-        if (editingId === dealer.id) resetForm();
-        saveDealers();
-        renderDealerList();
+        void deleteDealer(dealer);
       }
     });
 
-    dealers = loadDealers();
-    renderDealerList();
+    async function initDealers() {
+      dealerCountEl.textContent = "…";
+      try {
+        dealers = await fetchDealersFromSheet();
+      } catch (err) {
+        alert(`딜러 목록을 불러오지 못했습니다.\n${err.message}`);
+        dealers = [];
+      }
+      renderDealerList();
+    }
+
+    void initDealers();
   </script>
 </body>
 </html>
