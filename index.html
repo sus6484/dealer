@@ -514,15 +514,29 @@
     </div>
   </div>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"
+    }
+  }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="api-config.js"></script>
-  <script>
+  <script type="module">
+    import { db } from "./firebase.js";
+    import { doc, onSnapshot, setDoc } from "firebase/firestore";
 
     const DEFAULT_HOURLY = 20000;
     const INITIAL_ROWS = 10;
     const STORAGE_KEY = "dealer-payroll-v2";
     const STORAGE_KEY_LEGACY = "dealer-payroll-v1";
+    const WORKBOOK_DOC_PATH = ["payroll", "workbook"];
+    const SAVE_DEBOUNCE_MS = 500;
     const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+    const CLIENT_ID = `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const workbookRef = doc(db, ...WORKBOOK_DOC_PATH);
 
     const eventNameInput = document.getElementById("eventName");
     const dateInput = document.getElementById("workDate");
@@ -539,6 +553,9 @@
     let dealerPickerTargetRow = null;
     let timeKeyBuffer = "";
     let timeKeyTimer = null;
+    let saveTimer = null;
+    let isApplyingRemote = false;
+    let hasReceivedSnapshot = false;
     const TIME_KEY_BUFFER_MS = 700;
 
     function normalizeName(value) {
@@ -980,19 +997,110 @@
       }
     }
 
-    function saveWorkbook() {
-      syncActiveSheetFromTable();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workbook));
+    function sanitizeWorkbook(data) {
+      const sheets = Array.isArray(data?.sheets)
+        ? data.sheets.map((sheet) => ({
+            id: sheet.id || newSheetId(),
+            eventName: sheet.eventName || "",
+            date: sheet.date || todayDateString(),
+            rows: Array.isArray(sheet.rows)
+              ? sheet.rows.map((row) => ({
+                  name: row.name || "",
+                  start: row.start || "",
+                  end: row.end || "",
+                  rate: typeof row.rate === "number" ? row.rate : DEFAULT_HOURLY,
+                  bank: row.bank || "",
+                  account: row.account || "",
+                }))
+              : [],
+          }))
+        : [];
+
+      if (!sheets.length) {
+        const sheet = createSheet(todayDateString(), []);
+        return { activeSheetId: sheet.id, sheets: [sheet] };
+      }
+
+      const activeSheetId = sheets.some((s) => s.id === data.activeSheetId)
+        ? data.activeSheetId
+        : sheets[0].id;
+
+      return { activeSheetId, sheets };
     }
 
-    function loadLegacyData() {
-      const raw = localStorage.getItem(STORAGE_KEY_LEGACY);
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
+    function loadLocalWorkbook() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.sheets?.length) return sanitizeWorkbook(parsed);
+        } catch {
+          /* fall through */
+        }
       }
+
+      const legacyRaw = localStorage.getItem(STORAGE_KEY_LEGACY);
+      if (legacyRaw) {
+        try {
+          const legacy = JSON.parse(legacyRaw);
+          const sheet = createSheet(legacy?.date || todayDateString(), legacy?.rows ?? []);
+          return { activeSheetId: sheet.id, sheets: [sheet] };
+        } catch {
+          /* fall through */
+        }
+      }
+
+      return null;
+    }
+
+    function cacheWorkbookLocally() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workbook));
+      } catch {
+        /* ignore quota / private mode errors */
+      }
+    }
+
+    async function persistWorkbookToFirestore() {
+      syncActiveSheetFromTable();
+      cacheWorkbookLocally();
+      await setDoc(workbookRef, {
+        activeSheetId: workbook.activeSheetId,
+        sheets: workbook.sheets,
+        updatedAt: new Date().toISOString(),
+        updatedBy: CLIENT_ID,
+      });
+    }
+
+    function saveWorkbook() {
+      if (isApplyingRemote) return;
+      syncActiveSheetFromTable();
+      cacheWorkbookLocally();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        void persistWorkbookToFirestore().catch((err) => {
+          console.error(err);
+          alert(`Firebase 저장에 실패했습니다.\n${err.message}`);
+        });
+      }, SAVE_DEBOUNCE_MS);
+    }
+
+    function applyRemoteWorkbook(data, { forceRender = false } = {}) {
+      const next = sanitizeWorkbook(data);
+      const fromSelf = data?.updatedBy === CLIENT_ID;
+      workbook = next;
+
+      if (fromSelf && hasReceivedSnapshot && !forceRender) {
+        cacheWorkbookLocally();
+        return;
+      }
+
+      isApplyingRemote = true;
+      const active = getActiveSheet();
+      if (active) applySheetToTable(active);
+      renderSheetTabs();
+      cacheWorkbookLocally();
+      isApplyingRemote = false;
     }
 
     function createSheet(dateStr, rows) {
@@ -1005,28 +1113,46 @@
       };
     }
 
-    function initWorkbook() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed?.sheets?.length) {
-            workbook = parsed;
-            if (!workbook.sheets.some((s) => s.id === workbook.activeSheetId)) {
-              workbook.activeSheetId = workbook.sheets[0].id;
-            }
-            return;
-          }
-        } catch {
-          /* fall through */
-        }
-      }
+    function createDefaultWorkbook() {
+      const local = loadLocalWorkbook();
+      if (local) return local;
+      const sheet = createSheet(todayDateString(), []);
+      return { activeSheetId: sheet.id, sheets: [sheet] };
+    }
 
-      const legacy = loadLegacyData();
-      const sheet = createSheet(legacy?.date || todayDateString(), legacy?.rows ?? []);
-      workbook = { activeSheetId: sheet.id, sheets: [sheet] };
-      saveWorkbook();
-      if (legacy) localStorage.removeItem(STORAGE_KEY_LEGACY);
+    function initWorkbook() {
+      return new Promise((resolve, reject) => {
+        const unsubscribe = onSnapshot(
+          workbookRef,
+          (snap) => {
+            try {
+              if (!snap.exists()) {
+                if (!hasReceivedSnapshot) {
+                  workbook = createDefaultWorkbook();
+                  hasReceivedSnapshot = true;
+                  applyRemoteWorkbook(workbook, { forceRender: true });
+                  void persistWorkbookToFirestore()
+                    .then(() => resolve(unsubscribe))
+                    .catch(reject);
+                  return;
+                }
+                return;
+              }
+
+              const data = snap.data();
+              const firstLoad = !hasReceivedSnapshot;
+              hasReceivedSnapshot = true;
+              applyRemoteWorkbook(data, { forceRender: firstLoad });
+              if (firstLoad) resolve(unsubscribe);
+            } catch (err) {
+              reject(err);
+            }
+          },
+          (err) => {
+            reject(err);
+          }
+        );
+      });
     }
 
     function renderSheetTabs() {
@@ -1240,12 +1366,23 @@
 
     document.getElementById("addSheetBtn").addEventListener("click", addSheet);
 
-    initWorkbook();
-    const active = getActiveSheet();
-    if (active) applySheetToTable(active);
-    renderSheetTabs();
-    void loadRegisteredDealers().catch(() => {});
-    saveWorkbook();
+    async function boot() {
+      try {
+        await initWorkbook();
+      } catch (err) {
+        console.error(err);
+        workbook = createDefaultWorkbook();
+        const activeFallback = getActiveSheet();
+        if (activeFallback) applySheetToTable(activeFallback);
+        renderSheetTabs();
+        alert(
+          `Firebase 연결에 실패했습니다. 이 컴퓨터 임시 저장으로 계속합니다.\n${err.message}\n\nFirebase 콘솔에서 Firestore를 만들고, 규칙을 허용했는지 확인해 주세요.`
+        );
+      }
+      void loadRegisteredDealers().catch(() => {});
+    }
+
+    void boot();
   </script>
 </body>
 </html>
